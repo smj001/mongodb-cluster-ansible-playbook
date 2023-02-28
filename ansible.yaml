@@ -34,7 +34,7 @@
         state: directory
         owner: root
         group: root
-        mode: 1777
+        mode: 777
     
     - name: Create MongoDB Log Directory
       file:
@@ -42,7 +42,7 @@
         state: directory
         owner: root
         group: root
-        mode: 1777
+        mode: 777
 
     - name: Configure MongoDB
       template:
