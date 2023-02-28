@@ -22,10 +22,6 @@
         state: present
         filename: "/etc/apt/sources.list.d/mongodb-org-5.0.list"
 
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
     - name: Install MongoDB Package
       apt:
         name:
