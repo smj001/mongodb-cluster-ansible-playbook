@@ -51,18 +51,6 @@
       file:
         path: "/var/log/mongodb"
         mode: 0777
-    
-    # - name: Create Log file
-    #   file:
-    #     path: "/var/log/mongodb/mongod.log"
-    #     state: file
-    #     owner: root
-    #     group: root
-
-    # - name: Change Permission Log file
-    #   file:
-    #     path: "/var/log/mongodb/mongod.log"
-    #     mode: 0777
 
     - name: Configure MongoDB
       template:
