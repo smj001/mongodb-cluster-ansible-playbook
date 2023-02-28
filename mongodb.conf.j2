@@ -1,16 +1,27 @@
-systemLog:
-   destination: file
-   path: "/var/log/mongodb/mongod.log"
-   logAppend: true
-   logRotate: rename
-storage:
-   dbPath: /data/db
-   journal:
-      enabled: true
-setParameter:
-   enableLocalhostAuthBypass: false
+# network interfaces
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+
+# replication options
 replication:
   replSetName: rsdb
-net:
-   bindIp: 0.0.0.0
-   port: 27017
+
+# storage options
+storage:
+  dbPath: /data/db
+  journal:
+    enabled: true
+
+# systemLog options
+systemLog:
+  destination: file
+  path: /var/log/mongodb/mongod.log
+  logAppend: true
+  logRotate: rename
+
+# security options
+security:
+  authorization: disable
+setParameter:
+   enableLocalhostAuthBypass: false
