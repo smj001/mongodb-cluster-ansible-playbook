@@ -1,0 +1,89 @@
+- name: Deploy MongoDB Cluster
+  hosts: all
+  become: true
+  vars:
+    mongo_version: "4.4"
+    mongo_package_name: "mongodb-org"
+    mongo_repo_keyserver: "hkp://keyserver.ubuntu.com:80"
+    mongo_repo_keyid: "EA312927"
+    mongo_repo_file: "/etc/apt/sources.list.d/mongodb-org-{{ mongo_version }}.list"
+    replica_set_name: "rsdb"
+    mongodb_port: 27017
+    mongodb_data_dir: "/data/db"
+    init_script: "$PWD/init-script.js"
+  tasks:
+    - name: Add MongoDB repository key
+      apt_key:
+        keyserver: "{{ mongo_repo_keyserver }}"
+        id: "{{ mongo_repo_keyid }}"
+        state: present
+
+    - name: Add MongoDB repository file
+      apt_repository:
+        repo: deb http://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/{{ mongo_version }} multiverse
+        state: present
+        filename: "{{ mongo_repo_file }}"
+
+    - name: Install MongoDB packages
+      apt:
+        name:
+          - "{{ mongo_package_name }}={{ mongo_version }}*"
+          - "{{ mongo_package_name }}-server={{ mongo_version }}*"
+          - "{{ mongo_package_name }}-shell={{ mongo_version }}*"
+          - "{{ mongo_package_name }}-mongos={{ mongo_version }}*"
+        state: present
+
+    - name: Create MongoDB Data Directory
+      file:
+        path: "{{ mongodb_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+
+    - name: Configure MongoDB
+      template:
+        src: mongodb.conf.j2
+        dest: /etc/mongod.conf
+      notify: restart mongod
+
+    - name: Start MongoDB
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: Wait for MongoDB to Start
+      wait_for:
+        port: "{{ mongodb_port }}"
+        timeout: 30
+
+    - name: Initialize MongoDB Replica Set
+      shell: "mongo --eval 'rs.initiate()'"
+      register: rs_init
+      until: rs_init.rc == 0
+      retries: 5
+      delay: 5
+
+    - name: Wait for Replica Set Initialization
+      wait_for:
+        port: "{{ mongodb_port }}"
+        timeout: 30
+        search_regex: "{{ replica_set_name }}.*PRIMARY"
+
+    - name: Run MongoDB Cluster Initialization Script
+      shell: "mongo --eval 'load(\"{{ init_script }}\")'"
+      register: init_script_result
+      ignore_errors: true
+
+    - name: Verify MongoDB Cluster Initialization
+      shell: "mongo --eval 'sh.status()' | grep 'active mongoses'"
+      register: mongos_initialized
+      retries: 5
+      delay: 5
+      until: mongos_initialized.rc == 0
+
+  handlers:
+    - name: Restart mongod
+      service:
+        name: mongod
+        state: restarted
