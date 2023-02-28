@@ -55,7 +55,7 @@
     - name: Create Log file
       file:
         path: "/var/log/mongodb/mongod.log"
-        state: directory
+        state: file
         owner: root
         group: root
 
