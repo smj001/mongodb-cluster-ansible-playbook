@@ -18,19 +18,9 @@
 
     - name: Add MongoDB repository file
       apt_repository:
-        repo: deb http://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/{{ mongo_version }} multiverse
+        repo: deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse
         state: present
-        filename: "{{ mongo_repo_file }}"
-
-    - name: Create MongoDB source.list
-      file:
-        path: "/etc/apt/sources.list.d/mongodb-org-5.0.list"
-        state: file
-        owner: root
-        group: root
-
-    - name: Add Repo Address to source.list
-      shell: 'echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list'
+        filename: "/etc/apt/sources.list.d/mongodb-org-5.0.list"
 
     - name: Update apt cache
       apt:
