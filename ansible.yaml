@@ -2,21 +2,19 @@
   hosts: all
   become: true
   vars:
-    mongo_version: "4.4"
-    mongo_package_name: "mongodb-org"
-    mongo_repo_keyserver: "hkp://keyserver.ubuntu.com:80"
-    mongo_repo_keyid: "EA312927"
-    mongo_repo_file: "/etc/apt/sources.list.d/mongodb-org-{{ mongo_version }}.list"
     replica_set_name: "rsdb"
     mongodb_port: 27017
     mongodb_data_dir: "/data/db"
     init_script: "$PWD/init-script.js"
   tasks:
-    - name: Add MongoDB repository key
-      apt_key:
-        keyserver: "{{ mongo_repo_keyserver }}"
-        id: "{{ mongo_repo_keyid }}"
+    - name: Install MongoDB Dependency
+      apt:
+        name:
+          - gnupg
         state: present
+
+    - name: Add MongoDB repository key
+      shell: "{wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -"
 
     - name: Add MongoDB repository file
       apt_repository:
@@ -24,14 +22,36 @@
         state: present
         filename: "{{ mongo_repo_file }}"
 
-    - name: Install MongoDB packages
+    - name: Create MongoDB source.list
+      file:
+        path: "/etc/apt/sources.list.d/mongodb-org-5.0.list"
+        state: file
+        owner: root
+        group: root
+
+    - name: Add Repo Address to source.list
+      shell: "echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list"
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install MongoDB Package
       apt:
         name:
-          - "{{ mongo_package_name }}={{ mongo_version }}*"
-          - "{{ mongo_package_name }}-server={{ mongo_version }}*"
-          - "{{ mongo_package_name }}-shell={{ mongo_version }}*"
-          - "{{ mongo_package_name }}-mongos={{ mongo_version }}*"
+          - mongodb-org
         state: present
+
+    - name: Hold auto update for MongoDB
+      apt:
+        name:
+          - mongodb-org
+          - mongodb-org-database
+          - mongodb-org-server
+          - mongodb-org-shell
+          - mongodb-org-mongos
+          - mongodb-org-tools
+        state: held
 
     - name: Create MongoDB Data Directory
       file:
