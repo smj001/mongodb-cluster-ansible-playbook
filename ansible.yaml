@@ -39,7 +39,7 @@
       template:
         src: mongodb.conf.j2
         dest: /etc/mongod.conf
-      notify: restart mongod
+      notify: Restart mongod
 
     - name: Start MongoDB
       service:
