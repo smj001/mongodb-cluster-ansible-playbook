@@ -28,17 +28,6 @@
           - mongodb-org
         state: present
 
-    - name: Hold auto update for MongoDB
-      apt:
-        name:
-          - mongodb-org
-          - mongodb-org-database
-          - mongodb-org-server
-          - mongodb-org-shell
-          - mongodb-org-mongos
-          - mongodb-org-tools
-        state: held
-
     - name: Create MongoDB Data Directory
       file:
         path: "{{ mongodb_data_dir }}"
