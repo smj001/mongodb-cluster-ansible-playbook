@@ -5,7 +5,6 @@
     replica_set_name: "rsdb"
     mongodb_port: 27017
     mongodb_data_dir: "/data/db"
-    init_script: "./init-script.js"
   tasks:
     - name: Install MongoDB Dependency
       apt:
@@ -57,11 +56,6 @@
         src: mongodb.conf.j2
         dest: /etc/mongod.conf
       notify: Restart mongod
-    
-    - name: Copy Init MongoDB File
-      template:
-        src: init-script.js
-        dest: /opt/init-script.js
 
     - name: Start MongoDB
       service:
@@ -74,27 +68,39 @@
         port: "{{ mongodb_port }}"
         timeout: 30
 
+  handlers:
+    - name: Restart mongod
+      service:
+        name: mongod
+        state: restarted
+---
+- name: Initialize Mongo Cluster
+  hosts: ini-node
+  become: true
+  vars:
+    mongodb_port: 27017
+    replica_set_name: "rsdb"
+
+  tasks:
+
+    - name: Copy Init MongoDB File
+      template:
+        src: init-script.js
+        dest: /opt/init-script.js
+
     - name: Initiate MongoDB Cluster
       shell: "cat /opt/init-script.js | xargs mongo --eval "
+    
+    - name: Wait for MongoDB to Start
+      wait_for:
+        port: "{{ mongodb_port }}"
+        timeout: 30
 
-
-    # - name: Initialize MongoDB Replica Set
-    #   shell: "mongo --eval 'rs.initiate()'"
-    #   register: rs_init
-    #   until: rs_init.rc == 0
-    #   retries: 5
-    #   delay: 5
-
-    # - name: Wait for Replica Set Initialization
-    #   wait_for:
-    #     port: "{{ mongodb_port }}"
-    #     timeout: 30
-    #     search_regex: "{{ replica_set_name }}.*PRIMARY"
-
-    # - name: Run MongoDB Cluster Initialization Script
-    #   shell: "mongo --eval 'load(\"{{ init_script }}\")'"
-    #   register: init_script_result
-    #   ignore_errors: true
+    - name: Wait for Replica Set Initialization
+      wait_for:
+        port: "{{ mongodb_port }}"
+        timeout: 90
+        search_regex: "{{ replica_set_name }}.*PRIMARY"
 
     - name: Verify MongoDB Cluster Initialization
       shell: "mongo --eval 'sh.status()' | grep 'active mongoses'"
@@ -102,9 +108,3 @@
       retries: 5
       delay: 5
       until: mongos_initialized.rc == 0
-
-  handlers:
-    - name: Restart mongod
-      service:
-        name: mongod
-        state: restarted
